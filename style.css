@@ -1,0 +1,101 @@
+/* Reset + perusasetukset */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+               "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  background-color: #f5f7fa;
+  color: #1f2933;
+}
+
+/* Yläosa */
+header {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2.2rem;
+}
+
+header p {
+  max-width: 720px;
+  margin: 0 auto;
+  color: #cbd5e1;
+}
+
+/* Sisältöalue */
+section {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+section h2 {
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.4rem;
+  margin-bottom: 1rem;
+  color: #0f172a;
+}
+
+/* Teksti */
+p {
+  margin-bottom: 1rem;
+}
+
+/* Kuvat */
+img {
+  display: block;
+  max-width: 100%;
+  margin: 1rem auto 2rem auto;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+/* details / summary (stackit ja koodit) */
+details {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+summary:hover {
+  text-decoration: underline;
+}
+
+/* Linkit */
+a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Footer */
+footer {
+  margin-top: 3rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6b7280;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}

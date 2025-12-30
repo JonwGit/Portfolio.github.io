@@ -1,2 +1,1 @@
-# JonwGit.github.io
-Portfolio
+# Portfolio TC-kurssin aikana opituista asioista

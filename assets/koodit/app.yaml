@@ -1,0 +1,282 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: APP stack - CloudFront+S3, Cognito, EC2 backend, OIDC
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: playlist-cleaner
+  Env:
+    Type: String
+    AllowedValues: [dev, test, prod]
+    Default: dev
+  PriceClass:
+    Type: String
+    AllowedValues: [PriceClass_100, PriceClass_200, PriceClass_All]
+    Default: PriceClass_100
+  CallbackURL:
+    Type: String
+    Default: https://example.com/callback
+  LogoutURL:
+    Type: String
+    Default: https://example.com/logout
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 KeyPair for SSH
+  InstanceType:
+    Type: String
+    Default: t3.micro
+  AmiSsmParameter:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
+  GitHubOrg:
+    Type: String
+    Description: GitHub organization or user (for OIDC trust), e.g. my-org
+  FrontendRepo:
+    Type: String
+    Description: Frontend repo name (for OIDC trust), e.g. frontend
+  BackendRepo:
+    Type: String
+    Description: Backend repo name (for OIDC trust), e.g. backend
+  GitBranch:
+    Type: String
+    Default: main
+    Description: Branch to allow for OIDC trust, e.g. main
+
+Resources:
+  # -------- FRONTEND (CloudFront + S3) --------
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-frontend-${Env}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  FrontendOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${ProjectName}-${Env}-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        PriceClass: !Ref PriceClass
+        DefaultRootObject: index.html
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig: {}
+            OriginAccessControlId: !Ref FrontendOAC
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${FrontendBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}
+
+  # -------- COGNITO AUTH --------
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${ProjectName}-up-${Env}
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub ${ProjectName}-client-${Env}
+      GenerateSecret: false
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email, profile]
+      CallbackURLs: [!Ref CallbackURL]
+      LogoutURLs: [!Ref LogoutURL]
+      SupportedIdentityProviders: [COGNITO]
+
+  # -------- BACKEND EC2 --------
+  BackendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 backend SG
+      VpcId: !ImportValue
+        Fn::Sub: ${ProjectName}-${Env}-vpc-id
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  RdsIngressFromBackend:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !ImportValue
+        Fn::Sub: ${ProjectName}-${Env}-rds-sg-id
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      SourceSecurityGroupId: !Ref BackendSecurityGroup
+
+  BackendRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: secrets-read
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !ImportValue
+                  Fn::Sub: ${ProjectName}-${Env}-db-secret-arn
+
+  BackendInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref BackendRole
+
+  BackendInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiSsmParameter
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SubnetId: !ImportValue
+        Fn::Sub: ${ProjectName}-${Env}-pub-subnet-1
+      SecurityGroupIds:
+        - !Ref BackendSecurityGroup
+      IamInstanceProfile: !Ref BackendInstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-api-${Env}
+        - Key: App
+          Value: !Ref ProjectName
+        - Key: Env
+          Value: !Ref Env
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          dnf update -y
+          # Node.js
+          curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+          dnf install -y nodejs git
+          # pm2 prosessinhallinta
+          npm install -g pm2
+          mkdir -p /opt/app
+          chown -R ec2-user:ec2-user /opt/app
+
+  # -------- CI/CD: GitHub OIDC + Role --------
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+  GitHubDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-${Env}-github-deploy-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubOrg}/${FrontendRepo}:ref:refs/heads/${GitBranch}
+                  - !Sub repo:${GitHubOrg}/${BackendRepo}:ref:refs/heads/${GitBranch}
+      Policies:
+        - PolicyName: s3-cf-ec2-deploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [s3:PutObject, s3:DeleteObject, s3:ListBucket]
+                Resource:
+                  - !Sub arn:aws:s3:::${ProjectName}-frontend-${Env}
+                  - !Sub arn:aws:s3:::${ProjectName}-frontend-${Env}/*
+              - Effect: Allow
+                Action: cloudfront:CreateInvalidation
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ssm:SendCommand
+                  - ssm:ListCommandInvocations
+                  - ssm:ListCommands
+                  - ec2:DescribeInstances
+                Resource: '*'
+
+Outputs:
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+  DistributionDomainName:
+    Value: !GetAtt FrontendDistribution.DomainName
+  BackendPublicDns:
+    Description: Public DNS for backend EC2
+    Value: !GetAtt BackendInstance.PublicDnsName
+  GitHubDeployRoleArn:
+    Description: IAM role to assume from GitHub Actions (OIDC)
+    Value: !GetAtt GitHubDeployRole.Arn

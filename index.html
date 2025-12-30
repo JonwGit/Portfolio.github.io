@@ -2,12 +2,179 @@
 <html lang="fi">
 <head>
   <meta charset="UTF-8">
-  <title>Portfolio</title>
+  <title>TC-portfolio – AWS-ympäristö</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <h1>Tervetuloa portfoliooni</h1>
-  
+
+  <header>
+  <h1>TC-portfolio</h1>
+    <p>
+      Tämä portfolio kertoo TC-opintojakson aikana rakennetun AWS-ympäristön
+      arkkitehtuuria, kehitysvaiheita ja opittuja asioita.
+    </p>
+  </header>
+
+  <h1>TC:n aikana toimin seuraaveissa rooleissa: AWS, Scrum Master</h1>
+  <!-- 1. Ympäristö -->
+  <section>
+    <h2>1. Ympäristön kokonaiskuva</h2>
+    <p>
+      Projekti toteutettiin AWS-ympäristössä käyttäen CloudFrontia, S3:ta,
+      EC2-instanssia ja RDS-tietokantaa.
+    </p>
+
+    <img src="assets/screenshots/kuva1.png" alt="AWS-arkkitehtuurikaavio">
+  </section>
+
+  <!-- 2. CI/CD -->
+  <section>
+    <h2>2. CI/CD: GitHub → AWS (OIDC)</h2>
+    <p>
+      Julkaisu automatisoitiin GitHub Actionsin avulla. GitHub yhdistyy AWS:ään
+      OpenID Connect (OIDC) -mekanismin kautta ilman pysyviä AWS access key
+      -avaimia. Tämä oli omasta mielestäni parempi tapa kuin ohjeissa mainittu tyyli ja halusin kokeilla jotain uutta.
+    </p>
+
+    <img src="assets/screenshots/kuva2.png" alt="GitHub Actions OIDC identity provider IAM:ssa">
+  </section>
+
+  <!-- 3. EC2 hallinta -->
+  <section>
+    <h2>3. EC2-hallinta AWS Systems Managerilla</h2>
+    <p>
+      EC2-instanssia hallitaan AWS Systems Manager Session Managerin kautta.
+      SSH-avaimia tai avoimia hallintaportteja ei tarvita.
+    </p>
+
+    <img src="assets/screenshots/kuva3.png" alt="SSM agent active running EC2:ssa">
+  </section>
+
+  <!-- 4. Self-signed SSL + Nginx -->
+  <section>
+    <h2>4. Alkuvaihe: Self-signed SSL → siirtymä Nginx-ratkaisuun</h2>
+    <p>
+      Projektin alkuvaiheessa HTTPS toteutettiin EC2-instanssissa
+      itseallekirjoitetun SSL-sertifikaatin avulla, jotta sivu saatiin
+       näkyviin ja toimimaan CloudFrontin kautta.
+    </p>
+
+    <img src="assets/screenshots/kuva4.png"
+         alt="Self-signed SSL sertifikaatin luonti (avain rajattu pois)">
+
+    <p>
+      
+      Samalla backendin eteen lisättiin Nginx reverse proxy, joka välittää
+      liikenteen Node.js-backendille.
+    </p>
+
+    <img src="assets/screenshots/kuva5.png" alt="Nginx proxy_pass -haku">
+  </section>
+
+  <!-- 6. Nginx konfiguraatio -->
+  <section>
+    <h2>6. Nginx-konfiguraatio</h2>
+    <p>
+      Alla oleva kuva näyttää, että EC2 hyväksyy liikennettä vain
+      CloudFrontista ja että pyynnöt ohjataan Node.js-backendille
+      reverse proxyn kautta.
+    </p>
+
+    <img src="assets/screenshots/kuva6.png" alt="Nginx app.conf reverse proxy -konfiguraatio">
+  </section>
+
+  <!-- 7. Nginx status -->
+  <section>
+    <h2>7. Nginx-palvelun tila</h2>
+    <p>
+      Nginx-palvelu on käynnissä ja toimii oikein EC2:lla.
+    </p>
+
+    <img src="assets/screenshots/kuva7.png" alt="Nginx service active running">
+  </section>
+
+  <!-- Stackit -->
+  <section>
+    <h2>Stackit ja koodit (CloudFormation)</h2>
+    <p>
+      CloudFormation-templatet on sijoitettu erilliseen kansioon, jotta
+      HTML-sivu pysyy selkeänä ja koodi on helppo tarkastella kokonaisuutena.
+    </p>
+
+    <details>
+      <summary>VPC stack</summary>
+      <p><a href="assets/koodit/vpc.yaml" target="_blank">VPC-template</a></p>
+    </details>
+
+    <details>
+      <summary>Data / RDS stack</summary>
+      <p><a href="assets/koodit/data.yaml" target="_blank">Data-template</a></p>
+    </details>
+
+    <details>
+      <summary>App stack</summary>
+      <p><a href="assets/koodit/app.yaml" target="_blank">App-template</a></p>
+    </details>
+  </section>
+
+  <!-- SM -->
+  <section>
+    <h2>Scrum Master</h2>
+    <p>
+      Toimin TC:n aikana Scrum Masterina. Tämä rooli oli mieluisa, kun siihen pääsi mukaan ja suunnittelemaan githubissa backlogit yms.
+    </p>
+    <img src="assets/screenshots/kuva8.png" alt="Backlog">
+  </section>
+
+  <!-- Yhteenveto -->
+   <section>
+    <h2>Yhteenveto ja opit</h2>
+    <p>
+
+<h3>Mitä olen oppinut ja oivaltanut?</h3>
+<p> Alla oleva kuva näyttää, että EC2 hyväksyy liikennettä vain
+      CloudFrontista ja että pyynnöt ohjataan Node.js-backendille
+      reverse proxyn kautta.</p>
+
+<h3>Mitkä tavoitteet toteutuivat ja mitkä jäivät toteutumatta?</h3>
+<p> Alla oleva kuva näyttää, että EC2 hyväksyy liikennettä vain
+      CloudFrontista ja että pyynnöt ohjataan Node.js-backendille
+      reverse proxyn kautta.</p>
+
+
+<h3>Mitä opin suunnitelman ulkopuolelta?</h3>
+<p> Alla oleva kuva näyttää, että EC2 hyväksyy liikennettä vain
+      CloudFrontista ja että pyynnöt ohjataan Node.js-backendille
+      reverse proxyn kautta.</p>
+
+<h3>Miten näen tulevaisuuden
+Millaiseen työhön haluan sijoittua?
+Kuinka opintojakso tuki niitä tavoitteita?
+Mitä osaamista minun tulee vielä hankkia, jotta saavutan tavoitteeni?</h3>
+<p> Alla oleva kuva näyttää, että EC2 hyväksyy liikennettä vain
+      CloudFrontista ja että pyynnöt ohjataan Node.js-backendille
+      reverse proxyn kautta.</p>
+
+<h3>Mitkä ovat omat vahvuuteni ja ovatko ne selventyneet?</h3>
+<p> Alla oleva kuva näyttää, että EC2 hyväksyy liikennettä vain
+      CloudFrontista ja että pyynnöt ohjataan Node.js-backendille
+      reverse proxyn kautta.</p>
+      
+<h3>Miksi valitsin juuri nämä dokumentit/työt portfoliooni?</h3>
+<p> Alla oleva kuva näyttää, että EC2 hyväksyy liikennettä vain
+      CloudFrontista ja että pyynnöt ohjataan Node.js-backendille
+      reverse proxyn kautta.</p>
+
+
+    </p>
+  </section>
+
+  <footer>
+    <p>© Joni H</p>
+  </footer>
 
 </body>
 </html>
+

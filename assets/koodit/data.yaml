@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: MySQL RDS with Secrets Manager
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: playlist-cleaner
+  Env:
+    Type: String
+    AllowedValues: [dev, test, prod]
+    Default: dev
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  DbSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  EngineVersion:
+    Type: String
+    Default: ''
+  MasterUsername:
+    Type: String
+    Default: appadmin
+
+Conditions:
+  HasEngineVersion: !Not [!Equals [!Ref EngineVersion, '']]
+
+Resources:
+  DBSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${ProjectName}-${Env}-db-secret
+      Description: MySQL credentials
+      GenerateSecretString:
+        SecretStringTemplate: !Sub |
+          {"username":"${MasterUsername}"}
+        GenerateStringKey: password
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\\'
+
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets for RDS
+      SubnetIds: !Ref DbSubnetIds
+
+  DbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS security group
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: App
+          Value: !Ref ProjectName
+        - Key: Env
+          Value: !Ref Env
+
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub ${ProjectName}-db-${Env}
+      Engine: mysql
+      EngineVersion:
+        !If [HasEngineVersion, !Ref EngineVersion, !Ref 'AWS::NoValue']
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      MasterUsername: !Ref MasterUsername
+      MasterUserPassword: !Sub '{{resolve:secretsmanager:${DBSecret}::password}}'
+      VPCSecurityGroups:
+        - !Ref DbSecurityGroup
+      DBSubnetGroupName: !Ref DbSubnetGroup
+      PubliclyAccessible: false
+      MultiAZ: false
+      DeletionProtection: false
+      Tags:
+        - Key: App
+          Value: !Ref ProjectName
+        - Key: Env
+          Value: !Ref Env
+
+Outputs:
+  DbInstanceEndpoint:
+    Description: MySQL endpoint
+    Value: !GetAtt DBInstance.Endpoint.Address
+    Export:
+      Name: !Sub ${ProjectName}-${Env}-rds-endpoint
+
+  DbSecretArn:
+    Description: Secrets Manager ARN
+    Value: !Ref DBSecret
+    Export:
+      Name: !Sub ${ProjectName}-${Env}-db-secret-arn
+
+  RdsSecurityGroupId:
+    Description: RDS Security Group ID (for EC2->MySQL rule, add later)
+    Value: !Ref DbSecurityGroup
+    Export:
+      Name: !Sub ${ProjectName}-${Env}-rds-sg-id
