@@ -1,1 +1,1 @@
-# Portfolio TC-kurssin ajalta!
+# Portfolio TC-kurssin ajalta.
