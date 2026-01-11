@@ -35,7 +35,7 @@
     <p>
       Julkaisu automatisoitiin GitHub Actionsin avulla. GitHub yhdistyy AWS:ään
       OpenID Connect (OIDC) -mekanismin kautta ilman pysyviä AWS access key
-      -avaimia. Tämä oli omasta mielestäni parempi tapa kuin ohjeissa mainittu tyyli ja halusin kokeilla jotain uutta.
+      -avaimia. Tämä oli omasta mielestäni mielenkiintoinen tyyli kuin ohjeissa mainittu tyyli ja halusin kokeilla jotain uutta.
     </p>
 
     <img src="assets/screenshots/kuva2.png" alt="GitHub Actions OIDC identity provider IAM:ssa">
@@ -46,7 +46,7 @@
     <h2>3. EC2-hallinta AWS Systems Managerilla</h2>
     <p>
       EC2-instanssia hallitaan AWS Systems Manager Session Managerin kautta.
-      SSH-avaimia tai avoimia hallintaportteja ei tarvita.
+      
     </p>
 
     <img src="assets/screenshots/kuva3.png" alt="SSM agent active running EC2:ssa">
@@ -57,7 +57,7 @@
     <h2>4. Alkuvaihe: Self-signed SSL → siirtymä Nginx-ratkaisuun</h2>
     <p>
       Projektin alkuvaiheessa HTTPS toteutettiin EC2-instanssissa
-      itseallekirjoitetun SSL-sertifikaatin avulla, jotta sivu saatiin
+      itseallekirjoitetun sertifikaatin avulla, jotta sivu saatiin
        näkyviin ja toimimaan CloudFrontin kautta.
     </p>
 
@@ -74,7 +74,7 @@
     <h2>6. Nginx</h2>
     <p>
       Alla oleva kuva näyttää, että EC2 hyväksyy liikennettä vain
-      CloudFrontista ja että pyynnöt ohjataan Node.js-backendille
+      CloudFrontista ja että pyynnöt ohjataan backendille
       reverse proxyn kautta.
     </p>
 
@@ -85,7 +85,7 @@
   <section>
     <h2>7. Nginx-tila</h2>
     <p>
-      Nginx-palvelu on käynnissä ja toimii oikein EC2:lla.
+      Nginx-palvelu on käynnissä ja toimii EC2:lla.
     </p>
 
     <img src="assets/screenshots/kuva7.png" alt="Nginx service active running">
@@ -117,6 +117,7 @@
     <h2>Scrum Master</h2>
     <p>
       Toimin TC:n aikana Scrum Masterina. Tämä rooli oli mieluisa, kun siihen pääsi mukaan ja suunnittelemaan githubissa backlogit yms.
+      Meillä käytössä oli Storypointit, mitkä kertoivat tehtävänä vaikeustason, mikä kertoi kauan tehtävässä voi mennä.
     </p>
     <img src="assets/screenshots/kuva8.png" alt="Backlog">
   </section>
@@ -137,8 +138,6 @@
    olisin halunnut hyödyntää AWS:ssän tekoälytyökaluja</p>
 
 
-<h3>Mitä opin suunnitelman ulkopuolelta?</h3>
-<p> Oikeaa ryhmätyöskentelyä</p>
 
 <h3>Miten näen tulevaisuuden
 Millaiseen työhön haluan sijoittua?
@@ -148,7 +147,7 @@ Mitä osaamista minun tulee vielä hankkia, jotta saavutan tavoitteeni?</h3>
   Lisää osaamista sekä työskentelyä pilvipalveluiden parissa auttaa kehittymään alalla. </p>
 
 <h3>Mitkä ovat omat vahvuuteni ja ovatko ne selventyneet?</h3>
-<p> Omat vahvuuteni olivat aws sekä ongelmanratkaisu ja päättely </p>
+<p> Omat vahvuuteni olivat AWS, ryhmätyöskentely ja kommunikointi. </p>
       
 <h3>Miksi valitsin juuri nämä dokumentit/työt portfoliooni?</h3>
 <p>Nämä olivat suurimmat haasteet omalta osaltani, sekä nämä olisi voinut välttää käyttämällä beanstalkkia, mutta tässä opin enemmän </p>
