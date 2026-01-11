@@ -1,1 +1,1 @@
-# Portfolio TC-kurssin aikana opituista asioista
+# Portfolio TC-kurssin ajalta!
